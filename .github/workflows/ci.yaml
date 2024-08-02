@@ -2,26 +2,34 @@ name: Run Python Tests
 on:
   push:
     branches:
-      - "*"
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Python 3
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: ${{ matrix.python-version }}
       - name: Setup Poetry
         uses: abatilo/actions-poetry@v2
-        with:
-          poetry-version: 1.1.15
       - name: Install dependencies
         run: |
           poetry install
+      - name: Run linting
+        run: |
+          poetry run ruff check .
+          poetry run ruff format . --check
+      - name: Run mypy
+        run: poetry run mypy src/rivian
       - name: Run tests with poetry and pytest
         run: poetry run pytest
